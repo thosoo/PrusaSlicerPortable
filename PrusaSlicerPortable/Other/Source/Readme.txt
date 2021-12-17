@@ -15,11 +15,11 @@ USER CONFIGURATION
 ==================
 
 Some configuration in the PortableApps.com Launcher can be overridden by the
-user in an INI file next to VSCodiumPortable.exe called VSCodiumPortable.ini.
+user in an INI file next to PrusaSlicerPortable.exe called PrusaSlicerPortable.ini.
 If you are happy with the default options, it is not necessary, though.  There
 is an example INI included with this package to get you started.  To use it,
-copy AppNamePortable.ini from this directory to VSCodiumPortable.ini next to
-VSCodiumPortable.exe. The options in the INI file are as follows:
+copy AppNamePortable.ini from this directory to PrusaSlicerPortable.ini next to
+PrusaSlicerPortable.exe. The options in the INI file are as follows:
 
    AdditionalParameters=
    DisableSplashScreen=false
