@@ -33,3 +33,8 @@ $installer | Out-IniFile -Force -FilePath ".\PrusaSlicerPortable\App\AppInfo\ins
 $appinfo["Control"]["BaseAppID"]=-join("%BASELAUNCHERPATH%\App\",$asset1.name.replace('.zip',''),"\prusa-slicer.exe")
 $appinfo["Control"]["BaseAppID64"]=-join("%BASELAUNCHERPATH%\App\",$asset2.name.replace('.zip',''),"\prusa-slicer.exe")
 $appinfo | Out-IniFile -Force -FilePath ".\PrusaSlicerPortable\App\AppInfo\appinfo.ini"
+
+$launcher = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
+$launcher["Launch"]["ProgramExecutable"]=-join($asset1.name.replace('.zip',''),"\prusa-slicer.exe")
+$launcher["Launch"]["ProgramExecutable64"]=-join($asset2.name.replace('.zip',''),"\prusa-slicer.exe")
+$launcher | Out-IniFile -Force -FilePath ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
