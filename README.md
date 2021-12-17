@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="./PrusaSlicerPortable/App/AppInfo/appicon_256.png" alt="PrusaSlicer logo" width="200" />
+	<img src="./PrusaSlicerPortable/App/AppInfo/appicon.png" alt="PrusaSlicer logo" width="200" />
 </p>
 
 # PrusaSlicer Portable<a href="https://portableapps.com/"><img src="https://cdn2.portableapps.com/portableapps.com_1546.png" width="309" height="45" alt="PortableApps.com - Your Digital Life, Anywhere" title="PortableApps.com - Your Digital Life, Anywhere" align="right"></a>
