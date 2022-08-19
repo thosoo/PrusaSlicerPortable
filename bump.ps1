@@ -7,27 +7,24 @@ try {
 $repoName = "prusa3d/prusaslicer"
 $releasesUri = "https://api.github.com/repos/$repoName/releases/latest"
 $tag = (Invoke-WebRequest $releasesUri | ConvertFrom-Json).tag_name
-$tag2 = $tag.replace('version_','') -Replace '-.*',''
-
-if ($tag2 -match 'alpha')
+$tag2 = $tag.replace('version_','') #-Replace '-.*',''
+Write-Host $tag2
+if ($tag2 -match "alpha")
 {
   Write-Host "Found alpha."
   echo "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 }
-elseif ($tag2 -match 'beta')
+elseif ($tag2 -match "beta")
 {
   Write-Host "Found beta."
   echo "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 }
 else{
-    echo "UPSTREAM_TAG=$tag" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+    echo "UPSTREAM_TAG=$tag2" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
     $appinfo = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\appinfo.ini"
     if ($appinfo["Version"]["DisplayVersion"] -ne $tag2){
         $appinfo["Version"]["PackageVersion"]=-join($tag2,".0")
         $appinfo["Version"]["DisplayVersion"]=$tag2
-
-
-
 
         $installer = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\installer.ini"
 
@@ -54,11 +51,11 @@ else{
         $launcher["Launch"]["ProgramExecutable"]=-join($asset1.name.replace('.zip',''),"\prusa-slicer.exe")
         $launcher["Launch"]["ProgramExecutable64"]=-join($asset2.name.replace('.zip',''),"\prusa-slicer.exe")
         $launcher | Out-IniFile -Force -Encoding ASCII -FilePath ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
-        Write-Host "Bumped to "+$tag
+        Write-Host "Bumped to "+$tag2
         echo "SHOULD_COMMIT=yes" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
     }
     else{
       Write-Host "No changes."
       echo "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-    }
+    } 
 }
