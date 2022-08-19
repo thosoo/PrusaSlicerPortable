@@ -14,7 +14,7 @@ if ($tag2 -match 'alpha')
   Write-Host "Found alpha."
   echo "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 }
-else if ($tag2 -match 'beta')
+elseif ($tag2 -match 'beta')
 {
   Write-Host "Found beta."
   echo "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
