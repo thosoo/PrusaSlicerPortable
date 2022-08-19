@@ -13,6 +13,11 @@ elseif ($tag2 -match "beta")
   Write-Host "Found beta."
   echo "SHOULD_BUILD=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 }
+elseif ($tag2 -match "RC")
+{
+  Write-Host "Found Release Candidate."
+  echo "SHOULD_BUILD=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+}
 else{
     echo "UPSTREAM_TAG=$tag2" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
     $repoName2 = "thosoo/PrusaSlicerPortable"
