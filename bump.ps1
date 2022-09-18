@@ -47,7 +47,7 @@ else{
         $appinfo | Out-IniFile -Force -Encoding ASCII -FilePath ".\PrusaSlicerPortable\App\AppInfo\appinfo.ini"
 
         $launcher = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
-        $launcher["Launch"]["ProgramExecutable64"]=-join($asset1.name.replace('.zip',''),"\prusa-slicer.exe")
+        $launcher["Launch"]["ProgramExecutable64"]=-join($asset1.name.replace('_signed.zip',''),"\prusa-slicer.exe")
         $launcher | Out-IniFile -Force -Encoding ASCII -FilePath ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
         Write-Host "Bumped to "+$tag2
         echo "SHOULD_COMMIT=yes" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
