@@ -1,7 +1,13 @@
-dir
-$name = Split-Path -Path (Get-Location) -Leaf
+$directoryPath = (Get-Location).Path
+$name = Split-Path -Path $directoryPath -Leaf
+Get-ChildItem $directoryPath
+
 Write-Host "Starting Launcher Generator"
-Start-Process "D:\a\$name\$name\PortableApps.comLauncher\PortableApps.comLauncherGenerator.exe" -ArgumentList "D:\a\$name\$name\$name" -NoNewWindow -Wait
+$launcherGeneratorPath = "D:\a\$name\$name\PortableApps.comLauncher\PortableApps.comLauncherGenerator.exe"
+Start-Process -FilePath $launcherGeneratorPath -ArgumentList "D:\a\$name\$name\$name" -NoNewWindow -Wait
+
 Write-Host "Starting Installer Generator"
-Start-Process "D:\a\$name\$name\PortableApps.comInstaller\PortableApps.comInstaller.exe" -ArgumentList "D:\a\$name\$name\$name" -NoNewWindow -Wait
-dir
+$installerGeneratorPath = "D:\a\$name\$name\PortableApps.comInstaller\PortableApps.comInstaller.exe"
+Start-Process -FilePath $installerGeneratorPath -ArgumentList "D:\a\$name\$name\$name" -NoNewWindow -Wait
+
+Get-ChildItem $directoryPath
