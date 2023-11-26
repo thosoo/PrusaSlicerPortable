@@ -59,7 +59,7 @@ if ($tag2 -match "alpha|beta|RC") {
 
         # Get the contents of the PrusaSlicerPortable.ini file and update the ProgramExecutable64 field
         $launcher = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
-        $launcher["Launch"]["ProgramExecutable64"]=-join($asset1.name.replace('_signed.zip',''),"\prusa-slicer.exe")
+        $launcher["Launch"]["ProgramExecutable64"]=-join($asset1.name.replace('.zip',''),"\prusa-slicer.exe")
 
         # Write the updated PrusaSlicerPortable.ini file
         $launcher | Out-IniFile -Force -Encoding ASCII -FilePath ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
