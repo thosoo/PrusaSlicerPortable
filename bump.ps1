@@ -41,7 +41,7 @@ if ($tag2 -match "alpha|beta|RC") {
         $installer = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\installer.ini"
 
         # Find the asset matching the win64 pattern and update the DownloadURL, DownloadName, and DownloadFilename in installer.ini
-        $asset1Pattern = "*+win64*"
+        $asset1Pattern = "*win64*"
         $asset1 = (Invoke-WebRequest $releasesUri | ConvertFrom-Json).assets | Where-Object name -like $asset1Pattern
         $asset1Download = $asset1.browser_download_url.replace('%2B','+')
         $installer["DownloadFiles"]["DownloadURL"]=$asset1Download
