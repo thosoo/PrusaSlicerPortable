@@ -7,103 +7,127 @@ if (!$module) {
     Import-Module PsIni
 }
 
-# Define repository name and API endpoint
-$repoName     = "prusa3d/prusaslicer"
-$releasesUri  = "https://api.github.com/repos/$repoName/releases/latest"
+# ------------------------------------------------------------
+# 0) BASIC CONSTANTS
+# ------------------------------------------------------------
+$repoName    = "prusa3d/prusaslicer"
+$releasesUri = "https://api.github.com/repos/$repoName/releases/latest"
 
-# Retrieve latest tag from API endpoint
+# Folder that holds the portable app sources
+$root = ".\\PrusaSlicerPortable"
+
+# ------------------------------------------------------------
+# 1) GET LATEST STABLE TAG
+# ------------------------------------------------------------
 try {
-    $tag = (Invoke-RestMethod -Uri $releasesUri).tag_name
+    $tag = (Invoke-RestMethod -Uri $releasesUri).tag_name  # version_2.9.2
 } catch {
     Write-Host "Error while pulling API."
     "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-    break
+    return
 }
 
-$tag2 = $tag -replace 'version_',''        # e.g. 2.9.2
+$tag2 = $tag -replace 'version_',''          # 2.9.2
 Write-Host "Latest tag: $tag2"
 
 if ($tag2 -match 'alpha|beta|RC') {
-    Write-Host "Found alpha, beta, or RC — skipping."
+    Write-Host "Found alpha/beta/RC — skipping."
     "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
     return
 }
 
 "UPSTREAM_TAG=$tag2" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
-# -------------------------------------------------------------------
-# 1) Read the current appinfo.ini to see if we already have this build
-# -------------------------------------------------------------------
-$appinfo = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\appinfo.ini"
+# ------------------------------------------------------------
+# 2) STOP IF WE ALREADY HAVE THIS VERSION
+# ------------------------------------------------------------
+$appInfoPath = "$root\\App\\AppInfo\\appinfo.ini"
+$appinfo     = Get-IniContent $appInfoPath
 if ($appinfo["Version"]["DisplayVersion"] -eq $tag2) {
     Write-Host "No version change — nothing to do."
     "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
     return
 }
 
-# -------------------------------------------------------------------
-# 2) Grab the 64-bit ZIP asset and figure out its naming parts
-# -------------------------------------------------------------------
-$assetPattern  = "*win64*.zip"
-$asset         = (Invoke-WebRequest $releasesUri | ConvertFrom-Json).assets |
-                 Where-Object name -like $assetPattern |
-                 Select-Object -First 1
+# ------------------------------------------------------------
+# 3) FIND THE 64-BIT ZIP ASSET
+# ------------------------------------------------------------
+$assetPattern = "*win64*.zip"
+$asset        = (Invoke-WebRequest $releasesUri | ConvertFrom-Json).assets |
+                Where-Object name -like $assetPattern |
+                Select-Object -First 1
 
 if (-not $asset) {
-    Write-Host "Could not find a win64 asset in the release assets."
+    Write-Host "No win64 asset found."
     "SHOULD_COMMIT=no" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
     return
 }
 
-$archiveName   = $asset.name                  # PrusaSlicer-2.9.2-win64.zip
-$archiveBase   = $archiveName -replace '\.zip$',''          # PrusaSlicer-2.9.2-win64
-$innerDirName  = $archiveBase -replace '-win64$',''         # PrusaSlicer-2.9.2
-$archiveUrl    = $asset.browser_download_url -replace '%2B','+'
+$archiveName  = $asset.name                    # PrusaSlicer-2.9.2-win64.zip
+$archiveBase  = $archiveName -replace '\.zip$',''      # PrusaSlicer-2.9.2-win64
+$innerDir     = $archiveBase -replace '-win64$',''     # PrusaSlicer-2.9.2
+$archiveUrl   = $asset.browser_download_url -replace '%2B','+'
 
-Write-Host "Asset found: $archiveName"
-Write-Host "  inner folder  : $innerDirName"
-Write-Host "  outer folder  : $archiveBase"
+Write-Host "Asset: $archiveName"
+Write-Host "  Inner folder: $innerDir"
+Write-Host "  Target folder: $archiveBase"
 
-# -------------------------------------------------------------------
-# 3) UPDATE installer.ini (new double-extract fields highlighted)
-# -------------------------------------------------------------------
-$installer = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\installer.ini"
+# ------------------------------------------------------------
+# 4) UPDATE installer.ini
+#      (simple 1-level extract; rename handled in .nsh)
+# ------------------------------------------------------------
+$installerPath = "$root\\App\\AppInfo\\installer.ini"
+$installer     = Get-IniContent $installerPath
 
-$installer["DownloadFiles"]["DownloadURL"]          = $archiveUrl
-$installer["DownloadFiles"]["DownloadName"]         = $archiveBase
-$installer["DownloadFiles"]["DownloadFilename"]     = $archiveName
+$dl            = $installer["DownloadFiles"]
+$dl["DownloadURL"]             = $archiveUrl
+$dl["DownloadName"]            = $archiveBase
+$dl["DownloadFilename"]        = $archiveName
 
-# *** NEW / UPDATED ***
-$installer["DownloadFiles"]["DoubleExtractFilename"]    = $innerDirName
-$installer["DownloadFiles"]["DoubleExtract1To"]         = "App\${archiveBase}"
-$installer["DownloadFiles"]["DoubleExtract1Filter"]     = "**"
-$installer["DownloadFiles"]["CustomCodeUses7zip"]       = "true"
-# **********************
+# Ensure we use *AdvancedExtract* (single-level) and remove any DoubleExtract keys
+$dl["AdvancedExtract1To"]      = "App"
+$dl["AdvancedExtract1Filter"]  = "**"
 
-$installer | Out-IniFile -Force -Encoding ASCII -Pretty `
-           -FilePath ".\PrusaSlicerPortable\App\AppInfo\installer.ini"
+$dl.Remove("DoubleExtractFilename")  > $null
+$dl.Remove("DoubleExtract1To")       > $null
+$dl.Remove("DoubleExtract1Filter")   > $null
 
-# -------------------------------------------------------------------
-# 4) UPDATE appinfo.ini
-# -------------------------------------------------------------------
+$dl["CustomCodeUses7zip"]       = "true"
+
+$installer | Out-IniFile -Force -Encoding ASCII -Pretty -FilePath $installerPath
+
+# ------------------------------------------------------------
+# 5) WRITE / UPDATE PortableApps.comInstallerCustom.nsh
+# ------------------------------------------------------------
+$customDir  = "$root\\Other\\Source"
+$customFile = "$customDir\\PortableApps.comInstallerCustom.nsh"
+
+if (!(Test-Path $customDir)) { New-Item -ItemType Directory -Path $customDir -Force | Out-Null }
+
+$customNSIS = @"
+!macro CustomCodePostInstall
+    \${If} \${FileExists} "\$INSTDIR\\App\\$innerDir"
+        Rename "\$INSTDIR\\App\\$innerDir" "\$INSTDIR\\App\\$archiveBase"
+    \${EndIf}
+!macroend
+"@
+Set-Content -Path $customFile -Value $customNSIS -Encoding ASCII
+
+# ------------------------------------------------------------
+# 6) UPDATE appinfo.ini AND LAUNCHER
+# ------------------------------------------------------------
 $appinfo["Version"]["PackageVersion"] = "$tag2.0"
 $appinfo["Version"]["DisplayVersion"] =  $tag2
-$appinfo["Control"]["BaseAppID64"]    = "%BASELAUNCHERPATH%\App\${archiveBase}\prusa-slicer.exe"
+$appinfo["Control"]["BaseAppID64"]    = "%BASELAUNCHERPATH%\\App\\$archiveBase\\prusa-slicer.exe"
+$appinfo | Out-IniFile -Force -Encoding ASCII -FilePath $appInfoPath
 
-$appinfo | Out-IniFile -Force -Encoding ASCII `
-         -FilePath ".\PrusaSlicerPortable\App\AppInfo\appinfo.ini"
+$launcherPath = "$root\\App\\AppInfo\\Launcher\\PrusaSlicerPortable.ini"
+$launcher     = Get-IniContent $launcherPath
+$launcher["Launch"]["ProgramExecutable64"] = "$archiveBase\\prusa-slicer.exe"
+$launcher | Out-IniFile -Force -Encoding ASCII -FilePath $launcherPath
 
-# -------------------------------------------------------------------
-# 5) UPDATE PrusaSlicerPortable.ini launcher
-# -------------------------------------------------------------------
-$launcher = Get-IniContent ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
-$launcher["Launch"]["ProgramExecutable64"] = "${archiveBase}\prusa-slicer.exe"
-
-$launcher | Out-IniFile -Force -Encoding ASCII `
-          -FilePath ".\PrusaSlicerPortable\App\AppInfo\Launcher\PrusaSlicerPortable.ini"
-
-# -------------------------------------------------------------------
-# 6) All done – tell CI to commit the changes
-# -------------------------------------------------------------------
+# ------------------------------------------------------------
+# 7) DONE
+# ------------------------------------------------------------
 Write-Host "Bumped to $tag2"
 "SHOULD_COMMIT=yes" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
